@@ -9,11 +9,11 @@ namespace SwiftClassify
 {
 	static class MainClass
 	{
-		const string SWIFT_PROTOCOL = @"SWIFT_PROTOCOL\(""(?<i>[\w\d]+)""\)\n@protocol\s(?<n>[\w\d]+)";
-		const string SWIFT_CLASSE = @"SWIFT_CLASS\(""(?<i>[\w\d]+)""\)\n@interface\s(?<n>[\w\d]+)"; // \s:\s([\w\d]+)
+		const string SWIFT_PROTOCOL = @"SWIFT_PROTOCOL\(""(?<i>[\w\d]+)""\)\r\n@protocol\s(?<n>[\w\d]+)";
+		const string SWIFT_CLASSE = @"SWIFT_CLASS\(""(?<i>[\w\d]+)""\)\r\n@interface\s(?<n>[\w\d]+)"; // \s:\s([\w\d]+)
 
-		const string API_PROTOCOL = @"\s\[Protocol, Model\]\n\s*(\[(?<b>BaseType\s*\(typeof\([\w\d]+\))\)\]\n\s*)?interface\s*{0}\s";
-		const string API_CLASSE = @"\s\[(?<b>BaseType\s*\(typeof\([\w\d]+\))\)\]\n\s*(\[[\w\s]+\]\n\s*)*interface\s*{0}\s";
+		const string API_PROTOCOL = @"\s\[Protocol, Model\]\r\n\s*(\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\r\n\s*)?interface\s*{0}\s";
+		const string API_CLASSE = @"\s\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\r\n\s*(\[[\w\s]+\]\n\s*)*interface\s*{0}\s";
 
 		const string MAPPING = @"(?<o>[\w\d]+)+=(?<n>[\w\d]+)";
 
@@ -83,9 +83,8 @@ namespace SwiftClassify
 								Name = c.Groups["n"].Value,
 								CompiledName = c.Groups["i"].Value
 							} as Interface;
-
-			// Classes
-			var classes = from c in new Regex(SWIFT_CLASSE).Matches(input).GetAllMatches()
+            // Classes
+            var classes = from c in new Regex(SWIFT_CLASSE).Matches(input).GetAllMatches()
 						  where c.Success
 						  select new Classe()
 						  {
@@ -158,8 +157,8 @@ namespace SwiftClassify
 		{
 			public override void Replace()
 			{
-				var regex = new Regex(string.Format(API_CLASSE, FinalName)).Match(StringApi);
-				var baseType = regex.Groups["b"].Value;
+                var regex = new Regex(string.Format(API_CLASSE, FinalName)).Match(StringApi);
+                var baseType = regex.Groups["b"].Value;
 
 				string oldValue = regex.Value;
 				string newValue = oldValue.Replace(baseType, $@"{baseType}, Name = ""{CompiledName}""");
