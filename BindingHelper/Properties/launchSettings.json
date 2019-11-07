@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "BindingHelper": {
+      "commandName": "Project",
+      "commandLineArgs": "Tranform"
+    }
+  }
+}
