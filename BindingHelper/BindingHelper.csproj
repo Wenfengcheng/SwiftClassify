@@ -5,8 +5,12 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.6.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Helper\" />
+  </ItemGroup>
 </Project>

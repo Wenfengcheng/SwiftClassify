@@ -1,6 +1,5 @@
 ﻿using CommandLine;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -28,8 +27,6 @@ namespace BindingHelper
         const string API_PROTOCOL = @"\s\[Protocol, Model\]\r\n\s*(\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\r\n\s*)?interface\s*{0}\s";
         const string API_CLASSE = @"\s\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\r\n\s*(\[[\w\s]+\]\n\s*)*interface\s*{0}\s";
 
-        const string MAPPING = @"(?<o>[\w\d]+)+=(?<n>[\w\d]+)";
-
         static String StringApi;
         static StringBuilder SbApi;
 
@@ -56,24 +53,6 @@ namespace BindingHelper
                 return false;
             }
         }
-
-        //public static void ParseMapping(string input)
-        //{
-        //    if (string.IsNullOrWhiteSpace(input))
-        //    {
-        //        Mappings = new Dictionary<string, string>();
-        //    }
-        //    else
-        //    {
-        //        var matches = new Regex(MAPPING).Matches(input).GetAllMatches().Where(c => c.Success);
-        //        foreach (var item in matches)
-        //        {
-        //            Console.WriteLine($"{item.Groups["o"].Value}, {item.Groups["n"].Value}");
-        //        }
-
-        //        Mappings = matches.ToDictionary(k => k.Groups["o"].Value, v => v.Groups["n"].Value);
-        //    }
-        //}
 
         private static Interface[] GetItens(string input)
         {
@@ -105,13 +84,7 @@ namespace BindingHelper
             }
         }
 
-        private static Match[] GetAllMatches(this MatchCollection matches)
-        {
-            Match[] matchArray = new Match[matches.Count];
-            matches.CopyTo(matchArray, 0);
 
-            return matchArray;
-        }
 
         private abstract class Interface
         {
