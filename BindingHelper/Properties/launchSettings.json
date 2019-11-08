@@ -2,7 +2,7 @@
   "profiles": {
     "BindingHelper": {
       "commandName": "Project",
-      "commandLineArgs": "Tranform"
+      "commandLineArgs": "SwiftClassify -h SwiftSample-Swift.h -c ApiDefinition.cs"
     }
   }
 }

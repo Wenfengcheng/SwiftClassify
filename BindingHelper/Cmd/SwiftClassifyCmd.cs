@@ -2,13 +2,14 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace BindingHelper
 {
 
-    [Verb("Tranform", HelpText = "Tranform protocol and class name definition in ApiDefinition.cs by swift header file.")]
+    [Verb("SwiftClassify", HelpText = "Tranform protocol and class name definition in ApiDefinition.cs by swift header file.")]
     public class SwiftClassifyCmdOptions
     {
 
@@ -19,16 +20,36 @@ namespace BindingHelper
         public string CSharpApiDefinitionFile { get; set; }
     }
 
-    public static class SwiftClassifyCmd
+    public class SwiftClassifyCmd
     {
-        const string SWIFT_PROTOCOL = @"SWIFT_PROTOCOL\(""(?<i>[\w\d]+)""\)\r\n@protocol\s(?<n>[\w\d]+)";
-        const string SWIFT_CLASSE = @"SWIFT_CLASS\(""(?<i>[\w\d]+)""\)\r\n@interface\s(?<n>[\w\d]+)"; // \s:\s([\w\d]+)
+        private static string SWIFT_PROTOCOL = @"SWIFT_PROTOCOL\(""(?<i>[\w\d]+)""\)\r\n@protocol\s(?<n>[\w\d]+)";
+        private static string SWIFT_CLASSE = @"SWIFT_CLASS\(""(?<i>[\w\d]+)""\)\r\n@interface\s(?<n>[\w\d]+)"; // \s:\s([\w\d]+)
 
-        const string API_PROTOCOL = @"\s\[Protocol, Model\]\r\n\s*(\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\r\n\s*)?interface\s*{0}\s";
-        const string API_CLASSE = @"\s\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\r\n\s*(\[[\w\s]+\]\n\s*)*interface\s*{0}\s";
+        private static string API_PROTOCOL = @"\s\[Protocol, Model\]\r\n\s*(\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\r\n\s*)?interface\s*{0}\s";
+        private static string API_CLASSE = @"\s\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\r\n\s*(\[[\w\s]+\]\n\s*)*interface\s*{0}\s";
 
         static String StringApi;
         static StringBuilder SbApi;
+
+        public SwiftClassifyCmd()
+        {
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                SWIFT_PROTOCOL = @"SWIFT_PROTOCOL\(""(?<i>[\w\d]+)""\)\r\n@protocol\s(?<n>[\w\d]+)";
+                SWIFT_CLASSE = @"SWIFT_CLASS\(""(?<i>[\w\d]+)""\)\r\n@interface\s(?<n>[\w\d]+)";
+
+                API_PROTOCOL = @"\s\[Protocol, Model\]\r\n\s*(\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\r\n\s*)?interface\s*{0}\s";
+                API_CLASSE = @"\s\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\r\n\s*(\[[\w\s]+\]\n\s*)*interface\s*{0}\s";
+            }
+            else
+            {
+                SWIFT_PROTOCOL = @"SWIFT_PROTOCOL\(""(?<i>[\w\d]+)""\)\n@protocol\s(?<n>[\w\d]+)";
+                SWIFT_CLASSE = @"SWIFT_CLASS\(""(?<i>[\w\d]+)""\)\n@interface\s(?<n>[\w\d]+)";
+
+                API_PROTOCOL = @"\s\[Protocol, Model\]\n\s*(\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\n\s*)?interface\s*{0}\s";
+                API_CLASSE = @"\s\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\n\s*(\[[\w\s]+\]\n\s*)*interface\s*{0}\s";
+            }
+        }
 
         internal static Boolean TranformBaseType(SwiftClassifyCmdOptions options)
         {
@@ -83,8 +104,6 @@ namespace BindingHelper
                 item.Replace();
             }
         }
-
-
 
         private abstract class Interface
         {

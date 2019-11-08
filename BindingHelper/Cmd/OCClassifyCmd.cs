@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using CommandLine;
@@ -8,7 +9,7 @@ using CommandLine;
 namespace BindingHelper
 {
 
-    [Verb("Update", HelpText = "Fix building error in ApiDefinition.cs.")]
+    [Verb("OCClassify", HelpText = "Fix building error in ApiDefinition.cs.")]
     public class OCClassifyCmdOptions
     {
 
@@ -20,10 +21,22 @@ namespace BindingHelper
     public class OCClassifyCmd
     {
 
-        const string VERIFY = @"(?<a>\s\[Verify\s*\(\w*\)\]\n)";
+        private static string VERIFY = @"(?<a>\s\[Verify\s*\(\w*\)\]\n)";
 
         static String StringApi;
         static StringBuilder SbApi;
+
+        public OCClassifyCmd()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                VERIFY = @"(?<a>\s\[Verify\s*\(\w*\)\]\r\n)";
+            }
+            else
+            {
+                VERIFY = @"(?<a>\s\[Verify\s*\(\w*\)\]\n)";
+            }
+        }
 
         internal static Boolean UpdateDefinition(OCClassifyCmdOptions options)
         {
@@ -33,14 +46,8 @@ namespace BindingHelper
                 // Parse
                 SbApi = new StringBuilder(StringApi = File.ReadAllText(options.CSharpApiDefinitionFile));
 
-                var result = (from c in new Regex(VERIFY).Matches(StringApi).GetAllMatches()
-                             where c.Success
-                             select c.Groups["a"].Value).ToList().Distinct();
-
-                foreach (var item in result)
-                {
-                    SbApi.Replace(item, "");
-                }
+                // Remove verify attribute
+                RemoveVerifyAttribute();
 
                 // Save
                 File.WriteAllText(options.CSharpApiDefinitionFile.Replace(".cs", "New.cs"), SbApi.ToString());
@@ -55,6 +62,26 @@ namespace BindingHelper
                 Console.WriteLine(ex.Message);
                 return false;
             }
+        }
+
+        private static void RemoveVerifyAttribute()
+        {
+            try
+            {
+                var result = (from c in new Regex(VERIFY).Matches(StringApi).GetAllMatches()
+                              where c.Success
+                              select c.Groups["a"].Value).ToList().Distinct();
+
+                foreach (var item in result)
+                {
+                    SbApi.Replace(item, "");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
         }
     }
 }
