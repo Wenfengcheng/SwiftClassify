@@ -26,7 +26,7 @@ namespace BindingHelper
         static String StringApi;
         static StringBuilder SbApi;
 
-        public OCClassifyCmd()
+        static OCClassifyCmd()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {

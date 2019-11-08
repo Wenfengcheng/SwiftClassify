@@ -1,4 +1,5 @@
 ﻿using CommandLine;
+using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Linq;
@@ -22,16 +23,16 @@ namespace BindingHelper
 
     public class SwiftClassifyCmd
     {
-        private static string SWIFT_PROTOCOL = @"SWIFT_PROTOCOL\(""(?<i>[\w\d]+)""\)\r\n@protocol\s(?<n>[\w\d]+)";
-        private static string SWIFT_CLASSE = @"SWIFT_CLASS\(""(?<i>[\w\d]+)""\)\r\n@interface\s(?<n>[\w\d]+)"; // \s:\s([\w\d]+)
+        private static string SWIFT_PROTOCOL = null; //@"SWIFT_PROTOCOL\(""(?<i>[\w\d]+)""\)\r\n@protocol\s(?<n>[\w\d]+)";
+        private static string SWIFT_CLASSE = null; //@"SWIFT_CLASS\(""(?<i>[\w\d]+)""\)\r\n@interface\s(?<n>[\w\d]+)"; 
 
-        private static string API_PROTOCOL = @"\s\[Protocol, Model\]\r\n\s*(\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\r\n\s*)?interface\s*{0}\s";
-        private static string API_CLASSE = @"\s\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\r\n\s*(\[[\w\s]+\]\n\s*)*interface\s*{0}\s";
+        private static string API_PROTOCOL = null; //@"\s\[Protocol, Model\]\r\n\s*(\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\r\n\s*)?interface\s*{0}\s";
+        private static string API_CLASSE = null; //@"\s\[(?<b>BaseType\s*\(typeof\([\w\d]+)\)\]\r\n\s*(\[[\w\s]+\]\n\s*)*interface\s*{0}\s";
 
         static String StringApi;
         static StringBuilder SbApi;
 
-        public SwiftClassifyCmd()
+        static SwiftClassifyCmd()
         {
             if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -55,50 +56,88 @@ namespace BindingHelper
         {
             try
             {
+                NLogHelper.Logger.Info("Start to tranform basetype name definition.");
 
-                // Parse
-                SbApi = new StringBuilder(StringApi = File.ReadAllText(options.CSharpApiDefinitionFile));
-                ModifyApi(GetItens(File.ReadAllText(options.SwiftHeaderFile)));
+                // Read
+                try
+                {
+                    SbApi = new StringBuilder(StringApi = File.ReadAllText(options.CSharpApiDefinitionFile));
+                }
+                catch (Exception readEx)
+                {
+                    NLogHelper.Logger.Error(string.Format("Failed to read api definition (ApiDefinitionFile={0}, error info:{1}", options.CSharpApiDefinitionFile, JsonConvert.SerializeObject(readEx)));
+                }
+                NLogHelper.Logger.Info("Read all api definitions successfully.");
+
+                // Parse and replace
+                try
+                {
+                    string swiftDefinitions = File.ReadAllText(options.SwiftHeaderFile);
+                    ModifyApi(GetItens(swiftDefinitions));
+                }
+                catch (Exception swiftEx)
+                {
+                    NLogHelper.Logger.Error(string.Format("Failed to read swift definition (SwiftHeaderFile={0}, error info:{1}", options.SwiftHeaderFile, JsonConvert.SerializeObject(swiftEx)));
+                }
+                NLogHelper.Logger.Info("Get all swift definitions successfully.");
 
                 // Save
-                File.WriteAllText(options.CSharpApiDefinitionFile.Replace(".cs", "New.cs"), SbApi.ToString());
+                try
+                {
+                    File.WriteAllText(options.CSharpApiDefinitionFile.Replace(".cs", "New.cs"), SbApi.ToString());
+                }
+                catch (Exception writeEx)
+                {
+                    NLogHelper.Logger.Error(string.Format("Failed to write name definition (ApiDefinitionFile={1}, error info:{2}", options.SwiftHeaderFile, options.CSharpApiDefinitionFile, JsonConvert.SerializeObject(writeEx)));
+                }
+                NLogHelper.Logger.Info("Write to new api definitions successfully.");
 
                 // Ok
-                Console.WriteLine("Done");
+                NLogHelper.Logger.Info("Done.");
 
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                NLogHelper.Logger.Error(string.Format("Failed to tranform basetype name definition (SwiftHeaderFile={0}, ApiDefinitionFile={1}, error info:{2}", options.SwiftHeaderFile, options.CSharpApiDefinitionFile, JsonConvert.SerializeObject(ex)));
                 return false;
             }
         }
 
         private static Interface[] GetItens(string input)
         {
-            // Protocols
-            var protocols = from c in new Regex(SWIFT_PROTOCOL).Matches(input).GetAllMatches()
-                            where c.Success
-                            select new Protocol()
-                            {
-                                Name = c.Groups["n"].Value,
-                                CompiledName = c.Groups["i"].Value
-                            } as Interface;
-            // Classes
-            var classes = from c in new Regex(SWIFT_CLASSE).Matches(input).GetAllMatches()
-                          where c.Success
-                          select new Classe()
-                          {
-                              Name = c.Groups["n"].Value,
-                              CompiledName = c.Groups["i"].Value
-                          } as Interface;
+            try
+            {
+                // Protocols
+                var protocols = from c in new Regex(SWIFT_PROTOCOL).Matches(input).GetAllMatches()
+                                where c.Success
+                                select new Protocol()
+                                {
+                                    Name = c.Groups["n"].Value,
+                                    CompiledName = c.Groups["i"].Value
+                                } as Interface;
+                // Classes
+                var classes = from c in new Regex(SWIFT_CLASSE).Matches(input).GetAllMatches()
+                              where c.Success
+                              select new Classe()
+                              {
+                                  Name = c.Groups["n"].Value,
+                                  CompiledName = c.Groups["i"].Value
+                              } as Interface;
 
-            return protocols.Union(classes).ToArray();
+                return protocols.Union(classes).ToArray();
+            }
+            catch (Exception ex)
+            {
+                NLogHelper.Logger.Error(string.Format("Failed to parse orgin name and complied name (input={0}, error info:{1}", input, JsonConvert.SerializeObject(ex)));
+                return null;
+            }
         }
 
         private static void ModifyApi(Interface[] itens)
         {
+            if (itens == null || !itens.Any())
+                return;
             foreach (var item in itens)
             {
                 item.Replace();
